@@ -12,10 +12,30 @@ type PostRequestBody = {
 
 const { ObjectId } = mongoose.Types
 
-export const checkObjectId: Middleware = (ctx, next) => {
+export const getPostById: Middleware = async (ctx, next) => {
   const { id } = ctx.params
   if (!ObjectId.isValid(id)) {
     ctx.status = 400
+    return
+  }
+  try {
+    const post = await Post.findById(id)
+    if (!post) {
+      ctx.status = 404
+      return
+    }
+    ctx.state.post = post
+    return next()
+  } catch (e) {
+    ctx.throw(500, `${e}`)
+  }
+}
+
+export const checkOwnPost: Middleware = (ctx, next) => {
+  const { user, post } = ctx.state
+  // MongoDB에서 조회한 데이터의 id값을 문자열과 비교할 때는 반드시 .toString()을 해줘야함.
+  if (post.user._id.toString() !== user._id) {
+    ctx.status = 403
     return
   }
   return next()
@@ -94,17 +114,7 @@ export const list = async (ctx: Context) => {
 }
 
 export const read = async (ctx: Context) => {
-  const { id } = ctx.params
-  try {
-    const post = await Post.findById(id).exec()
-    if (!post) {
-      ctx.status = 404
-      return
-    }
-    ctx.body = post
-  } catch (e) {
-    ctx.throw(500, `${e}`)
-  }
+  ctx.body = ctx.state.post
 }
 
 export const remove = async (ctx: Context) => {
