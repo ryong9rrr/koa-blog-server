@@ -62,11 +62,25 @@ export const list = async (ctx: Context) => {
       .sort({ _id: -1 })
       .limit(10)
       .skip((page - 1) * 10) // pagination
+      .lean() // 데이터를 처음부터 JSON 형태로 바꿔주는 메서드
       .exec()
     const postCount = await Post.countDocuments().exec()
     // 클라이언트 편의를 위해 마지막 페이지를 제공해줍니다. 이 값은 HTTP header로 전송됨.
     ctx.set('Last-Page', Math.ceil(postCount / 10).toString())
+    /*
+    - 길이가 200자가 넘으면 문자열 뒤에 ...을 붙여서 문자열을 제한합니다.
+    - 위에서 lean() 함수를 사용하지 않는다면 코드는 아래와 같다.
     ctx.body = posts
+      .map((post) => post.toJSON())
+      .map((post) => ({
+        ...post,
+        body: post.body && post.body.length > 200 ? `${post.body!.slice(0, 200)}...` : post.body
+      }))
+    */
+    ctx.body = posts.map((post) => ({
+      ...post,
+      body: post.body && post.body.length > 200 ? `${post.body!.slice(0, 200)}...` : post.body
+    }))
   } catch (e) {
     ctx.throw(500, `${e}`)
   }
