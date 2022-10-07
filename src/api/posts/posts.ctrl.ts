@@ -1,5 +1,18 @@
+import { Middleware } from '@koa/router'
 import { Context } from 'koa'
+import mongoose from 'mongoose'
 import Post from '../../models/post'
+
+const { ObjectId } = mongoose.Types
+
+export const checkObjectId: Middleware = (ctx, next) => {
+  const { id } = ctx.params
+  if (!ObjectId.isValid(id)) {
+    ctx.status = 400
+    return
+  }
+  return next()
+}
 
 export const write = async (ctx: Context) => {
   if (!ctx.request.body) {
