@@ -1,8 +1,13 @@
-import mongoose from 'mongoose'
+import { Schema, model } from 'mongoose'
 
-const { Schema } = mongoose
+interface IPost {
+  title: string
+  body: string
+  tags: string[]
+  publishedDate: Date
+}
 
-const PostSchema = new Schema({
+const PostSchema = new Schema<IPost>({
   title: String,
   body: String,
   tags: [String],
@@ -12,5 +17,5 @@ const PostSchema = new Schema({
   }
 })
 
-const Post = mongoose.model('Post', PostSchema)
+const Post = model<IPost>('Post', PostSchema)
 export default Post

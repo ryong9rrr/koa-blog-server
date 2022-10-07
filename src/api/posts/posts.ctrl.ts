@@ -4,6 +4,12 @@ import mongoose from 'mongoose'
 import Joi from 'joi'
 import Post from '../../models/post'
 
+type PostRequestBody = {
+  title: string
+  body: string
+  tags: string[]
+}
+
 const { ObjectId } = mongoose.Types
 
 export const checkObjectId: Middleware = (ctx, next) => {
@@ -28,7 +34,7 @@ export const write = async (ctx: Context) => {
     ctx.body = result.error
     return
   }
-  const { title, body, tags } = ctx.request.body!
+  const { title, body, tags } = ctx.request.body as PostRequestBody
   const post = new Post({
     title,
     body,
