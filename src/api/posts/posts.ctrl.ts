@@ -43,8 +43,29 @@ export const write = async (ctx: Context) => {
 }
 
 export const list = async (ctx: Context) => {
+  // pagination
+  // 쿼리가 배열로 들어오면 잘못된 요청
+  if (ctx.query.page && Array.isArray(ctx.query.page)) {
+    ctx.status = 400
+    return
+  }
+  // 쿼리가 없으면 기본값은 1
+  const page = parseInt(ctx.query.page || '1', 10)
+  if (page < 1) {
+    ctx.status = 400
+    return
+  }
+
   try {
-    const posts = await Post.find().exec()
+    // 가장 최근 작성된 포스트부터 불러주도록 내림차순 정렬, 처음에는 10개만 보여주기
+    const posts = await Post.find()
+      .sort({ _id: -1 })
+      .limit(10)
+      .skip((page - 1) * 10) // pagination
+      .exec()
+    const postCount = await Post.countDocuments().exec()
+    // 클라이언트 편의를 위해 마지막 페이지를 제공해줍니다. 이 값은 HTTP header로 전송됨.
+    ctx.set('Last-Page', Math.ceil(postCount / 10).toString())
     ctx.body = posts
   } catch (e) {
     ctx.throw(500, `${e}`)

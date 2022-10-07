@@ -13,7 +13,14 @@
         </tr>
         <tr>
             <td style="width:50%"><b>GET</b> /posts</td>
-            <td>포스트 목록 조회</td>
+            <td>
+                <div>
+                포스트 목록 조회. 뒤에 ?page=숫자 쿼리를 넣으면 pagination, 넣지 않으면 기본값으로 1이 설정됩니다.
+                </div>
+                <div>
+                HTTP header에 "last-page"라는 key로 마지막 페이지가 제공됩니다.
+                </div>
+            </td>
         </tr>
         <tr>
             <td style="width:50%"><b>GET</b> /posts/:id</td>
