@@ -37,7 +37,29 @@ export const register = async (ctx: Context) => {
   }
 }
 
-export const login = async (ctx: Context) => {}
+export const login = async (ctx: Context) => {
+  const { username, password } = ctx.request.body as UserRequestBody
+  if (!username || !password) {
+    ctx.status = 401
+    return
+  }
+
+  try {
+    const user = await User.findByUsername(username)
+    if (!user) {
+      ctx.status = 401
+      return
+    }
+    const valid = await user.checkPassword(password)
+    if (!valid) {
+      ctx.status = 401
+      return
+    }
+    ctx.body = user.serialize()
+  } catch (e) {
+    ctx.throw(500, `${e}`)
+  }
+}
 
 export const check = async (ctx: Context) => {}
 

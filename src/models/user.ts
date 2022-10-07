@@ -1,4 +1,4 @@
-import { Model, Schema, model } from 'mongoose'
+import { Model, Schema, model, Document } from 'mongoose'
 import bcrypt from 'bcrypt'
 
 interface IUser {
@@ -13,7 +13,7 @@ interface IUserMethods {
 }
 
 interface UserModel extends Model<IUser, {}, IUserMethods> {
-  findByUsername(username: string): IUser
+  findByUsername(username: string): IUserMethods
 }
 
 const UserSchema = new Schema<IUser, UserModel, IUserMethods>({
