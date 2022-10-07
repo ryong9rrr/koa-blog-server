@@ -1,5 +1,6 @@
-import { Model, Schema, model, Document } from 'mongoose'
+import { Model, Schema, model } from 'mongoose'
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 
 interface IUser {
   username: string
@@ -10,6 +11,7 @@ interface IUserMethods {
   setPassword(password: string): Promise<void>
   checkPassword(password: string): Promise<boolean>
   serialize(): string
+  generateToken(): string
 }
 
 interface UserModel extends Model<IUser, {}, IUserMethods> {
@@ -35,6 +37,20 @@ UserSchema.methods.serialize = function () {
   const data = this.toJSON()
   delete data.hashedPassword
   return data
+}
+
+UserSchema.methods.generateToken = function () {
+  const token = jwt.sign(
+    {
+      _id: this.id,
+      username: this.username
+    },
+    process.env.JWT_SECRET as string,
+    {
+      expiresIn: '7d'
+    }
+  )
+  return token
 }
 
 UserSchema.statics.findByUsername = function (username: string) {
