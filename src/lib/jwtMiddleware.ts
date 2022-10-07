@@ -21,7 +21,9 @@ const jwtMiddleware: Middleware = async (ctx, next) => {
     if (exp && exp - now < 60 * 60 * 24 * 3.5) {
       const user = await User.findById(_id)
       if (!user) {
-        throw new Error('토큰 검증 실패')
+        // 로직상 문제가 없지만 에러핸들링
+        ctx.state = 500
+        return
       }
       const token = user.generateToken()
       ctx.cookies.set('access_token', token, {

@@ -1,10 +1,16 @@
-import { Schema, model } from 'mongoose'
+import { Schema, model, Types } from 'mongoose'
+
+interface IUser {
+  _id: Types.ObjectId
+  username: string
+}
 
 interface IPost {
   title: string
   body: string
   tags: string[]
   publishedDate: Date
+  user: IUser
 }
 
 const PostSchema = new Schema<IPost>({
@@ -14,6 +20,10 @@ const PostSchema = new Schema<IPost>({
   publishedDate: {
     type: Date,
     default: Date.now
+  },
+  user: {
+    _id: Types.ObjectId,
+    username: String
   }
 })
 
