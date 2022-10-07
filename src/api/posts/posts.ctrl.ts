@@ -83,15 +83,21 @@ export const list = async (ctx: Context) => {
     return
   }
 
+  const { tag, username } = ctx.query
+  const query = {
+    ...(username ? { 'user.username': username } : {}),
+    ...(tag ? { tags: tag } : {})
+  }
+
   try {
     // 가장 최근 작성된 포스트부터 불러주도록 내림차순 정렬, 처음에는 10개만 보여주기
-    const posts = await Post.find()
+    const posts = await Post.find(query)
       .sort({ _id: -1 })
       .limit(10)
       .skip((page - 1) * 10) // pagination
       .lean() // 데이터를 처음부터 JSON 형태로 바꿔주는 메서드
       .exec()
-    const postCount = await Post.countDocuments().exec()
+    const postCount = await Post.countDocuments(query).exec()
     // 클라이언트 편의를 위해 마지막 페이지를 제공해줍니다. 이 값은 HTTP header로 전송됨.
     ctx.set('Last-Page', Math.ceil(postCount / 10).toString())
     /*
