@@ -1,6 +1,7 @@
 import { Middleware } from '@koa/router'
 import { Context } from 'koa'
 import mongoose from 'mongoose'
+import Joi from 'joi'
 import Post from '../../models/post'
 
 const { ObjectId } = mongoose.Types
@@ -15,16 +16,25 @@ export const checkObjectId: Middleware = (ctx, next) => {
 }
 
 export const write = async (ctx: Context) => {
-  if (!ctx.request.body) {
-    ctx.throw(400)
+  // 필드 검증
+  const schema = Joi.object().keys({
+    title: Joi.string().required(),
+    body: Joi.string().required(),
+    tags: Joi.array().items(Joi.string()).required()
+  })
+  const result = schema.validate(ctx.request.body)
+  if (result.error) {
+    ctx.status = 400
+    ctx.body = result.error
+    return
   }
+  const { title, body, tags } = ctx.request.body!
+  const post = new Post({
+    title,
+    body,
+    tags
+  })
   try {
-    const { title, body, tags } = ctx.request.body
-    const post = new Post({
-      title,
-      body,
-      tags
-    })
     await post.save()
     ctx.body = post
   } catch (e) {
@@ -71,6 +81,18 @@ export const remove = async (ctx: Context) => {
 
 export const update = async (ctx: Context) => {
   const { id } = ctx.params
+  const schema = Joi.object().keys({
+    title: Joi.string(),
+    body: Joi.string(),
+    tags: Joi.array().items(Joi.string())
+  })
+
+  const result = schema.validate(ctx.request.body)
+  if (result.error) {
+    ctx.status = 400
+    ctx.body = result.error
+    return
+  }
   try {
     const post = await Post.findByIdAndUpdate(id, ctx.request.body, {
       new: true // false라면 업데이트 되기 전의 데이터를 반환
