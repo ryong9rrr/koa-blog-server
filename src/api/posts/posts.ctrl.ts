@@ -2,6 +2,7 @@ import { Middleware } from '@koa/router'
 import { Context } from 'koa'
 import mongoose from 'mongoose'
 import Joi from 'joi'
+import sanitizeHtml, { IOptions } from 'sanitize-html'
 import Post from '../../models/post'
 
 type PostRequestBody = {
@@ -11,6 +12,16 @@ type PostRequestBody = {
 }
 
 const { ObjectId } = mongoose.Types
+
+const sanitizeOption: IOptions = {
+  allowedTags: ['h1', 'h2', 'b', 'i', 'u', 's', 'p', 'ul', 'ol', 'li', 'blockquote', 'a', 'img'],
+  allowedAttributes: {
+    a: ['href', 'name', 'target'],
+    img: ['src'],
+    li: ['class']
+  },
+  allowedSchemes: ['data', 'http']
+}
 
 export const getPostById: Middleware = async (ctx, next) => {
   const { id } = ctx.params
@@ -57,7 +68,7 @@ export const write = async (ctx: Context) => {
   const { title, body, tags } = ctx.request.body as PostRequestBody
   const post = new Post({
     title,
-    body,
+    body: sanitizeHtml(body, sanitizeOption),
     tags,
     user: ctx.state.user
   })
@@ -67,6 +78,14 @@ export const write = async (ctx: Context) => {
   } catch (e) {
     ctx.throw(500, `${e}`)
   }
+}
+
+// body가 html태그로 들어오기 때문에 직접 자르지 않고 sanitizeHtml 라이브러리를 사용한 후 자름
+const removeHtmlAndShorten = (body: string) => {
+  const filtered = sanitizeHtml(body, {
+    allowedTags: []
+  })
+  return filtered.length < 200 ? filtered : `${filtered.slice(0, 200)}...`
 }
 
 export const list = async (ctx: Context) => {
@@ -100,19 +119,9 @@ export const list = async (ctx: Context) => {
     const postCount = await Post.countDocuments(query).exec()
     // 클라이언트 편의를 위해 마지막 페이지를 제공해줍니다. 이 값은 HTTP header로 전송됨.
     ctx.set('Last-Page', Math.ceil(postCount / 10).toString())
-    /*
-    - 길이가 200자가 넘으면 문자열 뒤에 ...을 붙여서 문자열을 제한합니다.
-    - 위에서 lean() 함수를 사용하지 않는다면 코드는 아래와 같다.
-    ctx.body = posts
-      .map((post) => post.toJSON())
-      .map((post) => ({
-        ...post,
-        body: post.body && post.body.length > 200 ? `${post.body!.slice(0, 200)}...` : post.body
-      }))
-    */
     ctx.body = posts.map((post) => ({
       ...post,
-      body: post.body && post.body.length > 200 ? `${post.body!.slice(0, 200)}...` : post.body
+      body: removeHtmlAndShorten(post.body)
     }))
   } catch (e) {
     ctx.throw(500, `${e}`)
@@ -151,8 +160,12 @@ export const update = async (ctx: Context) => {
     ctx.body = result.error
     return
   }
+  const nextData = { ...ctx.request.body }
+  if (nextData.body) {
+    nextData.body = sanitizeHtml(nextData.body as string, sanitizeOption)
+  }
   try {
-    const post = await Post.findByIdAndUpdate(id, ctx.request.body, {
+    const post = await Post.findByIdAndUpdate(id, nextData, {
       new: true // false라면 업데이트 되기 전의 데이터를 반환
     }).exec()
     if (!post) {
